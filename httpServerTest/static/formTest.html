@@ -1,0 +1,38 @@
+
+<!doctype html>
+<html>
+
+<head>
+	<title>FormTest</title>
+</head>
+
+<body>
+    <h1>Select stats file</h1>
+    <form action="/uploadData" method="POST">
+    <textarea id='textArea' name="body">Something something...</textarea><br>
+    <!-- The `multiple` attribute lets users select multiple files. -->
+    <input type="file" id="file-selector" multiple>
+    <input type="submit" value="Visualize">
+    </form>
+
+
+    <script>
+        const fileSelector = document.getElementById('file-selector');
+        fileSelector.addEventListener('change', (event) => {
+            const fileList = event.target.files;
+
+            const reader = new FileReader();
+            reader.addEventListener('load', (event) => {
+                const result = event.target.result;
+                // Do something with result
+                var output = document.getElementById('textArea');
+                output.value = result;
+            });
+
+            reader.readAsText(fileList[0]);
+        });
+    </script>
+    
+</body>
+
+</html>

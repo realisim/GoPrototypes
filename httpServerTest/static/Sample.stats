@@ -1,0 +1,23 @@
+[{
+	"Key": "MEventMediator/NumberOfEntriesForCurrentEvent/050",
+	"Samples": {
+		"Average": 0.666667,
+		"Minimum": 0,
+		"Maximum": 2,
+		"StandardDeviation": 1.0328,
+		"NumberOfSamples": 6,
+		"Data": [0, 2, 0, 0, 2, 0],
+		"TimestampsInMicroSeconds": [53102678, 53108722, 53108724, 63106189, 63106191, 63106192]
+	}
+}, {
+	"Key": "MEventMediator/NumberOfEntriesForCurrentEvent/EE7",
+	"Samples": {
+		"Average": 0.666667,
+		"Minimum": 0,
+		"Maximum": 2,
+		"StandardDeviation": 0.958927,
+		"NumberOfSamples": 30,
+		"Data": [0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0, 0, 2, 0],
+		"TimestampsInMicroSeconds": [933861, 937198, 937199, 27139844, 27139849, 27139850, 29098173, 29098175, 29098176, 31098185, 31098186, 31098187, 33099165, 33099167, 33099167, 35099449, 35099451, 35099451, 41100425, 41100427, 41100428, 51102658, 51102660, 51102660, 55103724, 55103727, 55103729, 61105906, 61105908, 61105909]
+	}
+}]

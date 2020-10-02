@@ -1,0 +1,53 @@
+
+<!doctype html>
+<html>
+
+<head>
+	<title>Line Chart</title>
+	<script src="./static/ChartCartesian/ChartCartesian.js?v=2"></script>
+	<script src="./static/ChartCartesian/Point.js?v=1"></script>
+	<script src="./static/ChartCartesian/Rectangle.js?v=1"></script>
+	<script src="./static/ChartCartesian/NiceNumber.js?v=1"></script>
+	<style>
+	canvas{
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+	}
+	</style>
+</head>
+
+<body>
+    <h1>Cartesian Charts</h1>
+	<div style="width:100%;height:100%;">
+		<canvas id="myChart" style="border:1px solid #d3d3d3;" width="800" height="600">
+		Your browser does not support the canvas element.
+		</canvas>
+	</div>
+	<script>
+	var config =  {
+		type: 'line',
+	    data: {
+            datasets: {{.Datasets}}
+	    },
+	    options: {
+	        scales: {
+	            yAxes: [{
+	                ticks: {
+	                    beginAtZero: true
+	                }
+	            }]
+	        }
+	    }
+	}
+
+	var canvas = document.getElementById('myChart');
+	var myChart = new ChartCartesian(canvas, config);
+
+		// ctx = canvas.getContext("2d");
+		// ctx.font = "30px Arial";
+		// ctx.fillText("Hello World", 10, 50);
+	</script>
+</body>
+
+</html>

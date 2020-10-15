@@ -1,9 +1,27 @@
+//-----------------------------------------------------------------------------
+/*
 
+|-------------------------------|
+|       title                   |
+|-------------------------------|
+|         legend                |
+|-------------------------------|
+| y|                            | 
+| a|                            | 
+| x|        canvas              | 
+| i|                            | 
+| s|                            | 
+|-------------------------------|
+|           xAxis               |
+|-------------------------------|
 
+*/
 const region = {
     rCanvas: 1,
-    rYAxisMask: 2,
-    rXAxisMask: 3,
+    rTitle: 2,
+    rLegend: 3,
+    rYAxisMask: 4,
+    rXAxisMask: 5,
 }
 
 //--- margins
@@ -12,11 +30,16 @@ const mAxisLabelMargins = 5;
 //--- colors
 const cBackground = '#ffffff';
 const cMainGridLines = '#9c9c9c';
+const cSecondaryGridLines = '#cfcfcf';
+const cTitle = '#222222'
 const cData = ['#e68a00', '#009900', '#006699', '#6600ff', '#cc0066'];
 const cNumberOfDataColors = 5;
 
 //--- fonts
 const fAxisFont = "12px Arial";
+const fAxisLabelFont = "bold 18px Arial"
+const fTitleFont = "bold 22px Arial"
+const fLegendFont = "normal 2opt Arial"
     
 class ChartCartesian{
 
@@ -29,13 +52,12 @@ class ChartCartesian{
         iCanvas.addEventListener("mouseup", this.handleMouseUp.bind(this), false);
         iCanvas.addEventListener("mousemove", this.handleMouseMove.bind(this), false);
 
-        //resize canvas to full parent size, which would be a div section
-        iCanvas.width = iCanvas.parentElement.offsetWidth
-        iCanvas.height = iCanvas.parentElement.offsetHeight
+        var legendDiv = this.addDivSections(iCanvas);
 
-        //this.mCtx.font = "30px Arial";
-        //this.mCtx.fillText(iConfig.data.labels, 10, 50);
-
+        //--- config
+        this.mTitle = iConfig.data.title;
+        this.mLabelAxisX = iConfig.data.labelAxisX;
+        this.mLabelAxisY = iConfig.data.labelAxisY;
         this.mDatasets = iConfig.data.datasets;
 
         // current canvas
@@ -66,9 +88,76 @@ class ChartCartesian{
         var mNiceNumberX = undefined;
         var mNiceNumberY = undefined;
 
+        //
+        var numDatasets = this.mDatasets.length;
+        this.mDatasetVisibility = new Array(numDatasets);
+        for(var i = 0; i < numDatasets; i++) {this.mDatasetVisibility[i] = true; }
+
+        this.addLegend(legendDiv);
         this.update();
     }
     
+    //-------------------------------------------------------------------------
+    addDivSections(iCanvas) {
+        var parentDiv = iCanvas.parentElement;
+
+        var canvasDiv = document.createElement("DIV");
+        canvasDiv.setAttribute("id", "leftDiv");
+        canvasDiv.setAttribute("style", "width: 800px; float: left;");
+        parentDiv.appendChild(canvasDiv);
+
+        // reparent canvas to left div
+        canvasDiv.appendChild(iCanvas);
+
+        // resize current div to 50%
+        //iParentDiv.setAttribute("width", "50%");
+
+        // add a new div.
+        var legendDiv = document.createElement("DIV");
+        legendDiv.setAttribute("id", "rightDiv");
+        legendDiv.setAttribute("style", "margin-left: 820px;");
+        parentDiv.appendChild(legendDiv);
+
+        //resize canvas to full parent size, which would be a div section
+        iCanvas.width = canvasDiv.offsetWidth;
+        iCanvas.height = canvasDiv.offsetHeight;
+
+        return legendDiv;
+    }
+    //-------------------------------------------------------------------------
+    addLegend(iLegendDiv) {
+        var numDataset = this.mDatasets.length;
+
+        // add legend content to newly added div.
+
+        var x = undefined;
+        for(var i = 0; i < numDataset; i++) {
+
+            // add a checkbox
+            x = document.createElement("INPUT");
+            x.setAttribute("type", "checkbox");
+            x.setAttribute("checked", true);
+            x.setAttribute("id", i);
+            x.addEventListener("click", this.handleLegendCheckbox.bind(this), false);
+            iLegendDiv.appendChild(x);
+
+            // add a little color square
+            x = document.createElement("LABEL");
+            x.setAttribute("style", "color:" + cData[i%cNumberOfDataColors] + ";font-size:150%;" );
+            x.innerHTML = "&#9632";
+            iLegendDiv.appendChild(x);
+
+            // add the name of the dataset
+            x = document.createElement("LABEL");
+            x.setAttribute("for", i)
+            x.innerHTML = this.mDatasets[i].label;
+            iLegendDiv.appendChild(x);
+
+            x = document.createElement("BR");
+            iLegendDiv.appendChild(x);
+        }
+    }
+
     //-------------------------------------------------------------------------
     clear() {
         this.mCtx.clearRect( this.mRectangle.mX1, this.mRectangle.mY1, this.mRectangle.getWidth(), this.mRectangle.getHeight() );
@@ -101,7 +190,7 @@ class ChartCartesian{
         this.mCtx.fillRect(mask.mX1, mask.mY1, mask.getWidth(), mask.getHeight());
 
         // draw numbers
-        this.mCtx.textBaseline = 'bottom'; 
+        this.mCtx.textBaseline = 'top'; 
         this.mCtx.textAlign = 'center'; 
         
         this.mCtx.strokeStyle = cMainGridLines;
@@ -109,7 +198,7 @@ class ChartCartesian{
         this.mCtx.font = fAxisFont;
         
         // px margin
-        var px = [0, mAxisLabelMargins]
+        var px = [0, mask.mY1 + mAxisLabelMargins]
         var virtualPos = this.toVirtual(px);
 
         for(var i = -1; i < (iNumberOfTicks+1); i++){
@@ -121,6 +210,14 @@ class ChartCartesian{
             n = this.roundNumberForAxisLabel(n, iTick);
             this.mCtx.fillText( n.toString() , px[0], px[1]);
         }
+
+        // draw axis label
+        this.mCtx.font = fAxisLabelFont;
+        this.mCtx.textBaseline = 'bottom'; 
+        this.mCtx.textAlign = 'center'; 
+        px = mask.getCenter();  
+        px[1] = mask.mY2 - mAxisLabelMargins;
+        this.mCtx.fillText( this.mLabelAxisX , px[0], px[1]);
 
         this.mCtx.restore();
     }
@@ -138,14 +235,14 @@ class ChartCartesian{
 
         // draw numbers
         this.mCtx.textBaseline = 'middle'; 
-        this.mCtx.textAlign = 'left'; 
+        this.mCtx.textAlign = 'right'; 
         
         this.mCtx.strokeStyle = cMainGridLines;
         this.mCtx.fillStyle = cMainGridLines;
         this.mCtx.font = fAxisFont;
         
         // px margin
-        var px = [mAxisLabelMargins, 0]
+        var px = [mask.mX2 - mAxisLabelMargins, 0]
         var virtualPos = this.toVirtual(px);
 
         for(var i = -1; i < (iNumberOfTicks+1); i++){
@@ -158,6 +255,17 @@ class ChartCartesian{
             this.mCtx.fillText( n.toString() , px[0], px[1]);
         }
 
+        // draw axis label
+        //
+        this.mCtx.font = fAxisLabelFont;
+        this.mCtx.textBaseline = 'top'; 
+        this.mCtx.textAlign = 'center'; 
+        px = mask.getCenter();  
+        px[0] = mask.mX1 + mAxisLabelMargins;
+        this.mCtx.translate(px[0], px[1]);
+        this.mCtx.rotate( -Math.PI / 2.0);
+        this.mCtx.fillText( this.mLabelAxisY , 0, 0);
+
         this.mCtx.restore();
     }
 
@@ -167,6 +275,10 @@ class ChartCartesian{
         this.mCtx.lineWidth = 1.5;
 
         for(var datasetIndex = 0; datasetIndex < this.mDatasets.length; datasetIndex++){
+
+            if(this.mDatasetVisibility[datasetIndex] == false){
+                continue;
+            }
 
             var dataX = this.mDatasets[datasetIndex].dataX;
             var dataY = this.mDatasets[datasetIndex].dataY;
@@ -207,15 +319,18 @@ class ChartCartesian{
 
         //console.log("drawGrid", [tickX, lbX, ubX, tickY, lbY, ubY]);
 
-        this.drawGridX(lbY, ubY, tickY, this.mNumberOfMainTicks);
-        this.drawGridY(lbX, ubX, tickX, this.mNumberOfMainTicks);
+        this.drawGridX(lbY, ubY, tickY / 5.0, 6.0 * this.mNumberOfMainTicks, cSecondaryGridLines);
+        this.drawGridX(lbY, ubY, tickY, this.mNumberOfMainTicks, cMainGridLines);
+
+        this.drawGridY(lbX, ubX, tickX / 5.0, 6.0 * this.mNumberOfMainTicks, cSecondaryGridLines);
+        this.drawGridY(lbX, ubX, tickX, this.mNumberOfMainTicks, cMainGridLines);
     }
 
     //-------------------------------------------------------------------------
-    drawGridX(iLowerBound, iUpperBound, iTick, iNumberOfTicks) {
+    drawGridX(iLowerBound, iUpperBound, iTick, iNumberOfTicks, iColor) {
         
         this.mCtx.save();
-        this.mCtx.strokeStyle = cMainGridLines;
+        this.mCtx.strokeStyle = iColor;
         
         var lineStart = [this.mVirtualRectangle.mX1, this.mVirtualRectangle.mY1];
         var lineEnd = [this.mVirtualRectangle.mX2, this.mVirtualRectangle.mY1];
@@ -239,9 +354,9 @@ class ChartCartesian{
     }
 
     //-------------------------------------------------------------------------
-    drawGridY(iLowerBound, iUpperBound, iTick, iNumberOfTicks) {
+    drawGridY(iLowerBound, iUpperBound, iTick, iNumberOfTicks, iColor) {
         this.mCtx.save();
-        this.mCtx.strokeStyle = cMainGridLines;
+        this.mCtx.strokeStyle = iColor;
 
         var lineStart = [this.mVirtualRectangle.mX1, this.mVirtualRectangle.mY1];
         var lineEnd = [this.mVirtualRectangle.mX1, this.mVirtualRectangle.mY2];
@@ -264,6 +379,55 @@ class ChartCartesian{
         this.mCtx.restore();
     }
 
+    // //-------------------------------------------------------------------------
+    // drawLegend() {
+    //     this.mCtx.save();
+        
+    //     var mask = this.getRegion(region.rLegend);
+    //     mask = this.rectangleToPixel(mask);
+
+    //     this.mCtx.fillStyle = cBackground;
+    //     this.mCtx.fillRect(mask.mX1, mask.mY1, mask.getWidth(), mask.getHeight());
+
+    //     // draw text
+    //     this.mCtx.fillStyle = cTitle;
+    //     this.mCtx.font = fLegendFont;
+    //     this.mCtx.textBaseline = 'top'; 
+    //     this.mCtx.textAlign = 'left';
+
+    //     var px = [mask.mX1 + mAxisLabelMargins, mask.mY1 + mAxisLabelMargins];
+
+    //     var numDatasets = this.mDatasets.length;
+    //     for(var i = 0; i < numDatasets; i++)
+    //     {
+    //         this.mCtx.fillText( this.mDatasets[i].label , px[0], px[1]);
+    //         px[1] += 10 + mAxisLabelMargins;
+    //     }
+
+    //     this.mCtx.restore();
+    // }
+
+    //-------------------------------------------------------------------------
+    drawTitle() {
+        this.mCtx.save();
+        
+        var mask = this.getRegion(region.rTitle);
+        mask = this.rectangleToPixel(mask);
+
+        this.mCtx.fillStyle = cBackground;
+        this.mCtx.fillRect(mask.mX1, mask.mY1, mask.getWidth(), mask.getHeight());
+
+        // draw text
+        this.mCtx.fillStyle = cTitle;
+        this.mCtx.font = fTitleFont;
+        this.mCtx.textBaseline = 'middle'; 
+        this.mCtx.textAlign = 'center'; 
+        var px = mask.getCenter();
+        px[1] += mAxisLabelMargins;
+        this.mCtx.fillText( this.mTitle , px[0], px[1]);
+        this.mCtx.restore();
+    }
+
     //-------------------------------------------------------------------------
     getRegion(iRegion) {
         var r = new Rectangle();
@@ -271,24 +435,59 @@ class ChartCartesian{
         switch(iRegion)
         {
             case region.rCanvas: r.setCorners(this.mRectangle.mX1, this.mRectangle.mY1, this.mRectangle.mX2, this.mRectangle.mY2); break;
+            case region.rTitle:
+                {
+                    var h = this.mRectangle.getHeight() - 30;
+                    r.setCorners(this.mRectangle.mX1, h, 
+                        this.mRectangle.mX2, this.mRectangle.mY2);
+                }break;
+            case region.rLegend:
+            {
+                var titleR = this.getRegion(region.rTitle);
+                var h = titleR.mY1 - 50;
+                r.setCorners(this.mRectangle.mX1, h, 
+                    this.mRectangle.mX2, titleR.mY1);
+            }break;
             case region.rXAxisMask:
-                // as high as the largest text
-                var ub = 0.0
-                r.setCorners(this.mRectangle.mX1, this.mRectangle.mY1, this.mRectangle.mX2, 30); 
-            break;
+                {
+                    // as high as the largest text
+                    // leave room for the axis label
+                    //
+                    var ub = "9999"
+                    const padding = 2 * mAxisLabelMargins;
+                    this.mCtx.font = fAxisFont;
+                    var w = this.mCtx.measureText(ub.toString()).width;
+                    w *= 2; // room fot the axis label
+                    r.setCorners(this.mRectangle.mX1, this.mRectangle.mY1, this.mRectangle.mX2, w); 
+                }break;
             case region.rYAxisMask:
-                // as wide as the largest text
-                var ub = this.mNiceNumberX.getNiceUpperBound();
-                const padding = 2 * mAxisLabelMargins;
-                this.mCtx.font = fAxisFont;
-                ub = this.roundNumberForAxisLabel(ub, this.mNiceNumberX.getTickSpacing())
-                var w = this.mCtx.measureText(ub.toString()).width;
-                r.setCorners(this.mRectangle.mX1, this.mRectangle.mY1, w + padding, this.mRectangle.mY2); 
-            break;
+                {
+                    // as wide as the largest text + space for the label
+                    var ub = this.mNiceNumberY.getNiceUpperBound();
+                    const padding = 2 * mAxisLabelMargins;
+                    this.mCtx.font = fAxisFont;
+                    ub = this.roundNumberForAxisLabel(ub, this.mNiceNumberY.getTickSpacing());
+
+                    var textSize = this.mCtx.measureText(ub.toString()); 
+                    var w = textSize.width;
+                    w += padding +  20;
+
+                    r.setCorners(this.mRectangle.mX1, this.mRectangle.mY1, w + padding, this.mRectangle.mY2); 
+                }break;
             default: break;
         }
 
         return r;
+    }
+
+    //-------------------------------------------------------------------------
+    handleLegendCheckbox(iEvent) {
+        console.log("clicked on " + iEvent.currentTarget.id )
+
+        var index = parseInt(iEvent.currentTarget.id);
+        this.mDatasetVisibility[index] = iEvent.currentTarget.checked
+        
+        this.update();
     }
 
     //-------------------------------------------------------------------------
@@ -297,6 +496,8 @@ class ChartCartesian{
         this.mDrag = true;
 
         this.update();
+
+        return false;
     }
 
     //-------------------------------------------------------------------------
@@ -322,6 +523,9 @@ class ChartCartesian{
         this.mDrag = false;
 
         this.update();
+
+        
+        return false;
     }
 
     //-------------------------------------------------------------------------
@@ -342,6 +546,9 @@ class ChartCartesian{
         this.updateVirualRectangle(iEvent.clientX, iEvent.clientY);
         
         this.update();
+
+        event.preventDefault();
+        return false;
     }
 
     //-------------------------------------------------------------------------  
@@ -386,9 +593,10 @@ class ChartCartesian{
 
     //-------------------------------------------------------------------------
     toVirtual(iPixelCoords) {
+        // invert the y
+        iPixelCoords[1] = this.mRectangle.getHeight() - iPixelCoords[1];
         var px = this.toVirtualDelta(iPixelCoords);
 
-        // substract y to invert the y axis.
         px[0] += this.mVirtualRectangle.mX1;
         px[1] += this.mVirtualRectangle.mY1;
         return px;
@@ -405,7 +613,6 @@ class ChartCartesian{
         var x = normalizedX * this.mVirtualRectangle.getWidth();
         var y = normalizedY * this.mVirtualRectangle.getHeight();
         
-        // substract y to invert the y axis.
         return [x, y];
     }
 
@@ -416,11 +623,12 @@ class ChartCartesian{
         this.mNiceNumberX = new NiceNumber(this.mVirtualRectangle.mX1, this.mVirtualRectangle.mX2, this.mNumberOfMainTicks);
         this.mNiceNumberY = new NiceNumber(this.mVirtualRectangle.mY1, this.mVirtualRectangle.mY2, this.mNumberOfMainTicks * this.mAspectRatio);
 
-        //this.DrawTitle();
         this.drawGrid();
         this.drawData();
         this.drawAxis();
-        //this.DrawLegend();
+
+        this.drawTitle();
+        //this.drawLegend();
     }
 
     //-------------------------------------------------------------------------
@@ -443,7 +651,7 @@ class ChartCartesian{
         
         if(iClientX != undefined && iClientY != undefined){
             this.mTranslation[0] -= delta[0];
-            this.mTranslation[1] += delta[1];
+            this.mTranslation[1] -= delta[1];
             this.updateVirualRectangle();
         }
         

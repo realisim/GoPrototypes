@@ -28,7 +28,10 @@ type Statistics struct {
 }
 
 type ChartData struct {
-	Datasets []ChartDataset
+	Title      string `json:"title"`
+	LabelAxisX string `json:"labelAxisX"`
+	LabelAxisY string `json:"labelAxisY"`
+	Datasets   []ChartDataset
 }
 
 type ChartDataset struct {
@@ -37,7 +40,11 @@ type ChartDataset struct {
 	DataY []float64 `json:"dataY"`
 }
 
+//---------------------------------------------------------------------------------------------------------------------
 func (cData *ChartData) format(boxStats []BoxStats) {
+	cData.Title = "Title"
+	cData.LabelAxisX = "seconds"
+	cData.LabelAxisY = "microseconds"
 
 	for _, stat := range boxStats {
 		var cDataset ChartDataset
